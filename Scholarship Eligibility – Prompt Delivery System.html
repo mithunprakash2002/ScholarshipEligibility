@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Scholarship Eligibility – Prompt Delivery System</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f6f7fb;--card:#fff;--text:#1b2030;--muted:#5d6479;--line:#dde1ec;--accent:#2f5bea;--code:#f0f2f8;
+--ok:#0f7b4a;--okbg:#dff5ea;--no:#b3261e;--nobg:#fde4e2;--warn:#8a5a00;--warnbg:#fff1d0}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12141b;--card:#1b1e28;--text:#e8eaf2;--muted:#9aa2b8;--line:#2d3243;--accent:#7b9bff;--code:#141720;--ok:#6fe0a6;--okbg:#12382a;--no:#ff9d94;--nobg:#401a17;--warn:#ffd078;--warnbg:#3a2d0c}}
+:root[data-theme="dark"]{--bg:#12141b;--card:#1b1e28;--text:#e8eaf2;--muted:#9aa2b8;--line:#2d3243;--accent:#7b9bff;--code:#141720;--ok:#6fe0a6;--okbg:#12382a;--no:#ff9d94;--nobg:#401a17;--warn:#ffd078;--warnbg:#3a2d0c}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:920px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:1.6rem;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 24px}
+.grid{display:grid;gap:16px;grid-template-columns:1fr 1fr}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+h2{font-size:1.05rem;margin:0 0 12px}
+label{display:block;font-weight:600;font-size:.92rem;margin:12px 0 4px}
+input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);font:inherit}
+input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.hint{color:var(--muted);font-size:.82rem;margin-top:3px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+button{padding:10px 16px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+button.alt{background:transparent;color:var(--accent)}
+:root[data-theme="dark"] button:not(.alt){color:#0b1020}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) button:not(.alt){color:#0b1020}}
+.result{margin-top:16px;padding:16px;border-radius:12px;text-align:center;font-weight:700;letter-spacing:.04em;font-size:1.25rem;background:var(--code);color:var(--muted)}
+.result.ELIGIBLE{background:var(--okbg);color:var(--ok)}
+.result.NOT_ELIGIBLE{background:var(--nobg);color:var(--no)}
+.result.INSUFFICIENT_DATA{background:var(--warnbg);color:var(--warn)}
+.why{font-size:.88rem;color:var(--muted);margin-top:8px;text-align:center}
+pre{background:var(--code);border:1px solid var(--line);border-radius:10px;padding:12px;margin:0;white-space:pre-wrap;word-break:break-word;font:.84rem/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;max-height:340px;overflow:auto}
+.full{margin-top:16px}
+.tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted);margin-left:6px;font-weight:500}
+</style>
+</head>
+<body>
+<main>
+  <h1>Scholarship Eligibility Assessment</h1>
+  <p class="sub">Enter the two values to see the eligibility label.</p>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Applicant data</h2>
+      <label for="score">Academic score (%)</label>
+      <input id="score" type="text" inputmode="decimal" placeholder="e.g. 88.5" autocomplete="off">
+      <div class="hint">Leave blank if not provided.</div>
+      <label for="income">Annual family income (₹)</label>
+      <input id="income" type="text" inputmode="decimal" placeholder="e.g. 250000 or 2,50,000" autocomplete="off">
+      <div class="hint">Leave blank if not provided.</div>
+      <div class="row">
+        <button id="run" type="button">Evaluate</button>
+        <button id="reset" type="button" class="alt">Reset</button>
+      </div>
+      <div id="result" class="result" aria-live="polite">—</div>
+      <div id="why" class="why"></div>
+    </section>
+
+    <section class="card">
+      <h2>Eligibility criteria</h2>
+      <ul style="margin:0 0 12px;padding-left:20px">
+        <li>Academic score ≥ 85%</li>
+        <li>Annual family income ≤ ₹3,00,000</li>
+        <li>Both conditions must hold</li>
+      </ul>
+      <h2>Output labels</h2>
+      <p style="margin:0"><code>ELIGIBLE</code> · <code>NOT_ELIGIBLE</code> · <code>INSUFFICIENT_DATA</code></p>
+      <p class="hint" style="margin-top:12px">A missing, non-numeric or negative value is treated as not provided and returns INSUFFICIENT_DATA. No values are ever assumed.</p>
+    </section>
+  </div>
+
+</main>
+
+<script>
+(function(){
+  var $ = function(id){return document.getElementById(id)};
+
+  function parse(v){
+    if(v == null) return null;
+    var s = String(v).trim().replace(/[₹,\s%]/g,"");
+    if(s === "" || !/^\d+(\.\d+)?$/.test(s)) return null;
+    return parseFloat(s);
+  }
+
+  function evaluate(score, income){
+    if(score === null || income === null) return {label:"INSUFFICIENT_DATA", why:"A required value is missing or invalid."};
+    if(score >= 85 && income <= 300000) return {label:"ELIGIBLE", why:"Score ≥ 85% and income ≤ ₹3,00,000."};
+    var f = [];
+    if(score < 85) f.push("score is below 85%");
+    if(income > 300000) f.push("income exceeds ₹3,00,000");
+    return {label:"NOT_ELIGIBLE", why:"Failed: " + f.join(" and ") + "."};
+  }
+
+  function run(){
+    var r = evaluate(parse($("score").value), parse($("income").value));
+    var el = $("result");
+    el.className = "result " + r.label;
+    el.textContent = r.label;
+    $("why").textContent = r.why;
+  }
+
+  $("run").addEventListener("click", run);
+  ["score","income"].forEach(function(id){
+    $(id).addEventListener("keydown", function(e){ if(e.key === "Enter") run(); });
+  });
+  $("reset").addEventListener("click", function(){
+    $("score").value = ""; $("income").value = "";
+    $("result").className = "result"; $("result").textContent = "—"; $("why").textContent = "";
+  });
+})();
+</script>
+</body>
+</html>
